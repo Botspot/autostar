@@ -1,20 +1,20 @@
 ![autostar logo](https://github.com/Botspot/autostar/blob/main/icons/autostar.png?raw=true)
 # AutoStar
 Easily make programs launch on system startup.
-Such programs are called "Autostarted programs", and the files used to do this are called "Autostart files". This is where the name **AutoStar** comes from - drop the **`t`** to get a unique, easy-to-remember name.
-![2021-07-31-001559_1366x768_scrot](https://user-images.githubusercontent.com/54716352/127730003-6f4a6396-b5c5-459b-b843-ce56bfe58e23.png)
+Such programs are called "Autostarted programs", and the files used to do this are called "Autostart files". This is where the name **AutoStar** comes from - drop the **`t`** to get a unique, easy-to-remember name.  
+![2021-07-31-001559_1366x768_scrot](https://user-images.githubusercontent.com/54716352/127730003-6f4a6396-b5c5-459b-b843-ce56bfe58e23.png)  
 This application was written by Botspot on 7/30/2021.  
 ## Installation:
 ### Download:
 ```
 git clone https://github.com/Botspot/autostar
 ```
-AutoStar is portable and can be executed from anywhere on your filesystem. For simplicity, this README will assume AutoStar was downloaded to your $HOME directory.
+AutoStar is portable and can be executed from anywhere on your filesystem. For simplicity, this README will assume AutoStar was downloaded to your $HOME directory.  
 ### First run:
 ```
 ~/autostar/main.sh
 ```
-When running for the first time, AutoStar will:
+When running for the first time, AutoStar will:  
 
 - Check and install dependencies: `yad`
 - Add a Main menu launcher. (~/.local/share/applications/autostar.desktop) This launcher is located under the Preferences category.
