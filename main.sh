@@ -170,6 +170,11 @@ Categories=System;Settings;
 StartupNotify=true" > ~/.local/share/applications/autostar.desktop
 fi
 
+if [ "$1" == setup ];then
+  echo "AutoStar setup complete."
+  exit 0
+fi
+
 IFS=$'\n'
 while true;do
   echo -n "Creating file list... "
