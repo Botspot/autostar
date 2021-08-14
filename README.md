@@ -6,7 +6,7 @@ Such programs are called "Autostarted programs", and the files used to do this a
 This application was written by Botspot on 7/30/2021.  
 ## Installation:
 [![badge](https://github.com/Botspot/pi-apps/blob/master/icons/badge.png?raw=true)](https://github.com/Botspot/pi-apps)  
-
+### Or, to download manually:
 ```
 git clone https://github.com/Botspot/autostar
 ```
