@@ -1,12 +1,12 @@
 ![autostar logo](https://github.com/Botspot/autostar/blob/main/icons/autostar.png?raw=true)
 # AutoStar
 Easily make programs launch on system startup.
-Such programs are called "Autostarted programs", and the files used to do this are called "Autostart files".
+Such programs are called "Autostarted programs", and the files used to do this are called "Autostart files".  
 ![2021-07-31-001559_1366x768_scrot](https://user-images.githubusercontent.com/54716352/127730003-6f4a6396-b5c5-459b-b843-ce56bfe58e23.png)  
 This application was written by Botspot on 7/30/2021.  
 ## Installation:
 [![badge](https://github.com/Botspot/pi-apps/blob/master/icons/badge.png?raw=true)](https://github.com/Botspot/pi-apps)  
-### Or, to download mnanually:
+
 ```
 git clone https://github.com/Botspot/autostar
 ```
