@@ -120,6 +120,7 @@ autostartdir="$HOME/.config/autostart"
 mkdir -p "$autostartdir"
 
 command -v yad >/dev/null || (echo "Installing 'yad'..." ; sudo apt update && sudo apt install -y yad || error "Failed to install yad!")
+command -v xargs >/dev/null || (echo "Installing 'findutils'..."; sudo apt update && sudo apt install -y findutils || error "Failed to install findutils!")
 yadflags=(--center --title="AutoStar" --separator='\n' --window-icon="${DIRECTORY}/icons/autostar.png")
 
 #default message displayed on list of autostart files
@@ -180,8 +181,8 @@ while true;do
   echo -n "Creating file list... "
   LIST=''
   for file in $(find "$autostartdir" -type f);do
-    name="$(cat "$file" | grep '^Name=' | sed 's/Name=//g' | head -n1)"
-    exec="$(cat "$file" | grep '^Exec=' | sed 's/Exec=//g' | head -n1)"
+    name="$(cat "$file" | grep '^Name=' | sed 's/Name=//g' | head -n1 | xargs)"
+    exec="$(cat "$file" | grep '^Exec=' | sed 's/Exec=//g' | head -n1 | xargs)"
     LIST="$LIST
 ${DIRECTORY}/icons/txt.png
 $(basename "$file")
