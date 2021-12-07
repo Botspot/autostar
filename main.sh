@@ -180,8 +180,9 @@ while true;do
   echo -n "Creating file list... "
   LIST=''
   for file in $(find "$autostartdir" -type f);do
-    name="$(cat "$file" | grep '^Name=' | sed 's/Name=//g' | head -n1)"
-    exec="$(cat "$file" | grep '^Exec=' | sed 's/Exec=//g' | head -n1)"
+    filecontents="$(cat "$file" | tr '\r' '\n')"
+    name="$(echo "$filecontents" | grep '^Name=' | sed 's/Name=//g' | head -n1)"
+    exec="$(echo "$filecontents" | grep '^Exec=' | sed 's/Exec=//g' | head -n1)"
     LIST="$LIST
 ${DIRECTORY}/icons/txt.png
 $(basename "$file")
