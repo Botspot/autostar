@@ -104,7 +104,7 @@ Hidden=false" > "$autostartdir/$filename"
     echo -e "File contains:\n$(cat "$autostartdir/$filename" | sed 's/^/ /g')\n"
   elif [ $button == 0 ] && [ -f "$autostartdir/$filename" ];then
     #edit existing file with new values
-    echo "$(cat "$autostartdir/$filename" | sed "s|Name=.*|Name=$name|g" | sed "s|Exec=.*|Exec=$exec|g")" > "$autostartdir/$filename"
+    echo "[Desktop Entry]"$'\n'"Name=$name"$'\n'"Exec=$exec"$'\n'"$(grep -v '^Name=\|^Exec=\|^\[Desktop Entry\]' "$autostartdir/$filename")" > "$autostartdir/$filename"
     
     echo "Edited existing autostart file at $autostartdir/$filename"
     echo -e "File contains:\n$(cat "$autostartdir/$filename" | sed 's/^/ /g')\n"
@@ -192,7 +192,7 @@ $exec"
   done
   echo Done
   
-  filename="$(echo "$LIST" | tail -n +2 | yad "${yadflags[@]}" --width=750 --height=300 \
+  filename="$(echo "$LIST" | sed 's/&/&amp;/g' | tail -n +2 | yad "${yadflags[@]}" --width=750 --height=300 \
     --text="$motd" \
     --list --column=:IMG --column=File --column=Name --column="Date added" --column=command --print-column='2' \
     --button=New!"${DIRECTORY}/icons/new.png"!"Create a new autostart file":4 \
