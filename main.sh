@@ -13,6 +13,39 @@ warning() {
   zenity --error --width 300 --text "$(echo -e "$1" | sed 's/&/&amp;/g' | tr -d '<>')"
 }
 
+#launch a .desktop file with gio inside a terminal, so the user can see its output. Closing the terminal kills the program.
+#Usage: testfile path/to/file.desktop
+testfile() {
+  local commands
+  commands='trap '\''pkill -s $$'\'' EXIT HUP'$'\n'
+  commands+="gio launch $(printf '%q' "$1")"$'\n'
+  commands+='echo -e "\n\e[1mgio launch exited with status $?.\e[0m Close this window (or press Enter) to stop the program and return to AutoStar."'$'\n'
+  commands+='read -r'
+  "${DIRECTORY}/terminal-run" "$commands" "AutoStar - testing $(basename "$1")"
+}
+
+#write the form values (filename, name, exec) to the autostart file, creating it if needed
+savefile() {
+  if [ ! -f "$autostartdir/$filename" ];then
+    #create new file
+    echo "[Desktop Entry]
+Name=$name
+Exec=$exec
+Terminal=false
+Type=Application
+X-GNOME-Autostart-enabled=true
+Hidden=false" > "$autostartdir/$filename"
+    echo "Created new autostart file at $autostartdir/$filename"
+    motd="<b>Success</b> New autostart file (<b>$filename</b>) created."
+  else
+    #edit existing file with new values
+    echo "[Desktop Entry]"$'\n'"Name=$name"$'\n'"Exec=$exec"$'\n'"$(grep -v '^Name=\|^Exec=\|^\[Desktop Entry\]' "$autostartdir/$filename")" > "$autostartdir/$filename"
+    echo "Edited existing autostart file at $autostartdir/$filename"
+    motd="<b>Success</b> Pre-existing autostart file (<b>$filename</b>) has been updated with new values."
+  fi
+  echo -e "File contains:\n$(cat "$autostartdir/$filename" | sed 's/^/ /g')\n"
+}
+
 newfile() {
   #set defaults - variable 1 can change filename if set, otherwise it's new-autostart.desktop
   filename='new-autostart.desktop'
@@ -34,7 +67,7 @@ newfile() {
       exec="$(cat "$autostartdir/$filename" | grep '^Exec=' | sed 's/Exec=//g' | head -n1)"
       
       #and display an "open in text editor" button
-      buttons=(--button="Text Editor"!"${DIRECTORY}/icons/txt.png"!"Opens <b>$autostartdir/$filename</b> in a text editor for manual modifications.":2 --button=Cancel:1 --button=OK!!"Write these new values to the autostart file":0)
+      buttons=(--button="Text Editor"!"${DIRECTORY}/icons/txt.png"!"Opens <b>$autostartdir/$filename</b> in a text editor for manual modifications.":2 --button=Test!"${DIRECTORY}/icons/test.png"!"Launch the values in this form with gio launch to check for issues":4 --button=Cancel:1 --button=OK!!"Write these new values to the autostart file":0)
     fi
   else
     filenamelocked=0
@@ -49,12 +82,13 @@ newfile() {
       --field="For multiple commands, do this:"$'\n'"<big><b>bash -c "\""</b>command1<b>;</b> command2<b>;</b> command3<b>"\""</b></big>":LBL "" \
       "${buttons[@]}")"
     button=$?
-    [ $button != 0 ] && break
-    
+    [ $button != 0 ] && [ $button != 4 ] && break
+
+    #yad only returns the form contents for even-numbered exit codes
     filename="$(echo "$output" | sed -n 1p)"
     name="$(echo "$output" | sed -n 2p)"
     exec="$(echo "$output" | sed -n 3p)"
-    
+
     echo -e "Data received:\nFileneme: $filename\nName: $name\nCommand: $exec\nButton: $button"
     
     #run a bunch of tests on the output values and ensure they are valid before exiting the loop
@@ -84,31 +118,18 @@ newfile() {
       go_back_and_fix=1
     fi
     
-    if [ "$go_back_and_fix" == 0 ];then
+    if [ "$go_back_and_fix" == 0 ] && [ $button == 4 ];then
+      #Test button: save, run it in a terminal, then go back to editing
+      savefile
+      testfile "$autostartdir/$filename"
+    elif [ "$go_back_and_fix" == 0 ];then
       break #exit loop if all above tests passed
     fi
   done
   
   #skip everything in here if Cancel was clicked while creating a new autostart file, thereby breaking out of the loop
-  if [ $button == 0 ] && [ ! -f "$autostartdir/$filename" ];then
-    #create new file
-    echo "[Desktop Entry]
-Name=$name
-Exec=$exec
-Terminal=false
-Type=Application
-X-GNOME-Autostart-enabled=true
-Hidden=false" > "$autostartdir/$filename"
-    echo "Created new autostart file at $autostartdir/$filename"
-    motd="<b>Success</b> New autostart file (<b>$filename</b>) created."
-    echo -e "File contains:\n$(cat "$autostartdir/$filename" | sed 's/^/ /g')\n"
-  elif [ $button == 0 ] && [ -f "$autostartdir/$filename" ];then
-    #edit existing file with new values
-    echo "[Desktop Entry]"$'\n'"Name=$name"$'\n'"Exec=$exec"$'\n'"$(grep -v '^Name=\|^Exec=\|^\[Desktop Entry\]' "$autostartdir/$filename")" > "$autostartdir/$filename"
-    
-    echo "Edited existing autostart file at $autostartdir/$filename"
-    echo -e "File contains:\n$(cat "$autostartdir/$filename" | sed 's/^/ /g')\n"
-    motd="<b>Success</b> Pre-existing autostart file (<b>$filename</b>) has been updated with new values."
+  if [ $button == 0 ];then
+    savefile
   elif [ $button == 2 ];then
     #open in text editor
     mousepad "$autostartdir/$filename" || leafpad "$autostartdir/$filename" || geany "$autostartdir/$filename" || xdg-open "$autostartdir/$filename" || error "Failed to find a text editor to open <b>$autostartdir/$filename</b>"
@@ -197,6 +218,7 @@ $exec"
     --list --column=:IMG --column=File --column=Name --column="Date added" --column=command --print-column='2' \
     --button=New!"${DIRECTORY}/icons/new.png"!"Create a new autostart file":4 \
     --button=Delete!"${DIRECTORY}/icons/trash.png"!"Move the selected autostart file to the Trash":2 \
+    --button=Test!"${DIRECTORY}/icons/test.png"!"Launch the selected file with gio launch to check it for issues":6 \
     --button=Edit!"${DIRECTORY}/icons/edit.png"!"Modify an existing autostart file.":0)"
   button=$?
   
@@ -215,6 +237,14 @@ $exec"
     else
       errors="$(gio trash "$autostartdir/$filename" 2>&1)"
       [ $? != 0 ] && warning "Failed to move <b>$autostartdir/$filename</b> to Trash!\nErrors: $errors"
+    fi
+  elif [ $button == 6 ];then
+    echo "Test autostart file"
+    if [ -z "$filename" ];then
+      echo "One autostart file must be selected."
+      yad "${yadflags[@]}" --text="  One autostart file must be selected for this Test button to do anything.  " --button="Got it."
+    else
+      testfile "$autostartdir/$filename"
     fi
   elif [ $button == 0 ];then
     echo "Edit autostart file"

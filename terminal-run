@@ -1,0 +1,156 @@
+#!/bin/bash
+{
+#$1 is the command to be run.
+#$2 is the title.
+commands="$1"
+title="$2"
+
+#set DEBUG variable to 1 to display which terminal is being used
+[ -z "$DEBUG" ] && DEBUG=0
+
+function error {
+  echo -e "\e[91m$1\e[39m"
+  exit 1
+}
+
+#reset the GTK theme so terminals follow the system GTK theme
+export GTK_THEME=''
+
+#add a line to the terminal's command-to-run that saves the terminal's PID to a known filename
+temp_pid_file="$(mktemp -u)"
+commands="echo "\$""\$" > $temp_pid_file
+$commands"
+
+#add a line to the terminal's command-to-run that sets the title. This method allows it to be changed later, while specifying the title using a flag does not.
+commands="echo -ne '\e]0;${title}\a'
+$commands"
+
+terminals='lxterminal
+xfce4-terminal
+mate-terminal
+lxterm
+uxterm
+xterm
+urxvt
+konsole
+terminator
+ptyxis
+gnome-terminal
+gnome-terminal.wrapper
+tilix
+tilix.wrapper
+qterminal
+alacritty
+kitty'
+
+#Try to honor the preference of update-alternatives x-terminal-emulator
+terminal="$(basename "$(readlink -f "$(command -v x-terminal-emulator)")")"
+
+[ $DEBUG == 1 ] && echo "Default x-terminal-emulator: $terminal"
+
+#if x-terminal-emulator is found and it matches an option in $choices, then we can use it.
+choice=''
+if [ ! -z "$terminal" ] && echo "$terminals" | grep -qFx "$terminal" ;then
+  #choose the same terminal that x-terminal-emulator uses
+  choice="$terminal"
+  [ $DEBUG == 1 ] && echo "Using $terminal"
+else
+  #otherwise we have to run through each supported terminal, hoping that one is installed on the system
+  IFS=$'\n'
+  for terminal in $terminals ;do
+    if command -v "$terminal" >/dev/null ;then
+      choice="$terminal"
+      [ $DEBUG == 1 ] && echo "Using $terminal"
+      break
+    fi
+  done
+fi
+
+if [ -z "$choice" ];then
+  error 'Failed to locate any terminal emulators!!!'"
+
+Please install one of the supported terminal emulators from this list:
+$terminals"
+elif [ "$choice" == lxterminal ];then
+  lxterminal -e bash -c "$commands" &
+  
+elif [ "$choice" == xfce4-terminal ];then
+  xfce4-terminal -x bash -c "$commands" &
+  
+elif [ "$choice" == mate-terminal ];then
+  mate-terminal -x bash -c "$commands" &
+  
+elif [ "$choice" == lxterm ];then
+  lxterm -e bash -c "$commands" &
+  
+elif [ "$choice" == uxterm ];then
+  uxterm -e bash -c "$commands" &
+  
+elif [ "$choice" == xterm ];then
+  xterm -e bash -c "$commands" &
+  
+elif [ "$choice" == urxvt ];then
+  urxvt -e bash -c "$commands" &
+  
+elif [ "$choice" == konsole ];then
+  konsole -e bash <(echo "$commands") &
+  
+elif [ "$choice" == terminator ];then
+  terminator -x bash -c "$commands" &
+
+elif [ "$choice" == ptyxis ];then
+  ptyxis -- bash -c "$commands" &
+  
+elif [ "$choice" == gnome-terminal ] || [ "$choice" == gnome-terminal.wrapper ];then
+  gnome-terminal -- bash -c "$commands" &
+
+elif [ "$choice" == tilix ] || [ "$choice" == tilix.wrapper ];then
+  tilix -e bash -c "$commands" &
+  
+elif [ "$choice" == qterminal ];then
+  qterminal -e bash <(echo "$commands") &
+  
+elif [ "$choice" == alacritty ];then
+  alacritty --command bash -c "$commands" &
+  
+elif [ "$choice" == kitty ];then
+  kitty bash -c "$commands" &
+  
+else
+  error 'Failed to locate any terminal emulators!!!'"
+
+Please install one of the supported terminal emulators from this list:
+$terminals"
+fi
+
+#A terminal should now be launching and in a few seconds the pid file should appear
+if [ ! -z "$temp_pid_file" ];then
+  #echo "Waiting for terminal to close..."
+  #wait until pid file exists and give up in 10 seconds
+  attempts=0
+  while [ ! -f "$temp_pid_file" ];do
+    
+    if [ "$attempts" -gt 10 ];then
+      if [ ! -d /tmp ];then
+        error "terminal-run: Terminal failed to launch because your /tmp directory is missing. Please create the directory and set the permissions to 1777."
+      elif ! touch "$temp_pid_file" ;then
+        error "terminal-run: Terminal failed to launch due to bad permissions in your /tmp directory. Please ensure that the folder's permissions are set to 1777. (Current permission value is $(stat -c %a /tmp))"
+      else
+        error "terminal-run: No terminal detected as it never created the pid file within 10 seconds."
+      fi
+    fi
+    sleep 1
+    attempts=$((attempts + 1))
+  done #pid file now exists
+  terminalrun_pid="$(cat "$temp_pid_file")"
+  
+  #now, wait until the pid stops (terminal closes)
+  while [ -d /proc/${terminalrun_pid} ];do
+    sleep 1
+  done
+  rm -f "$temp_pid_file"
+  
+fi
+
+exit 0
+}
